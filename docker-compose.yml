@@ -1,0 +1,62 @@
+version: '3.7'
+
+# Define services
+services:
+  # App backend service
+  app-server:
+    # Configuration for building the docker image for the backend service
+    build:
+      context: polling-app-server # Use an image built from the specified dockerfile in the `polling-app-server` directory.
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080" # Forward the exposed port 8080 on the container to port 8080 on the host machine
+    restart: always
+    depends_on: 
+      - db # This service depends on PostgreSQL. Start that first.
+    environment: # Pass environment variables to the service
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/polls_93g5 # Assuming PostgreSQL runs on port 5432
+      SPRING_DATASOURCE_USERNAME: polls_93g5_user
+      SPRING_DATASOURCE_PASSWORD: wstNtf7Iw9wZV6bSdPmdYN9YnlLcNVdn
+      SPRING_DATASOURCE_DRIVER_CLASS_NAME: org.postgresql.Driver
+    networks: # Networks to join (Services on the same network can communicate with each other using their name)
+      - backend
+      - frontend
+
+  # Frontend Service 
+  app-client:
+    build:
+      context: polling-app-client # Use an image built from the specified dockerfile in the `polling-app-client` directory.
+      dockerfile: Dockerfile
+      args:
+        REACT_APP_API_BASE_URL: http://127.0.0.1:8080/api
+    ports:
+      - "9090:80" # Forward the exposed port 80 on the container to port 80 on the host machine
+    restart: always
+    depends_on:
+      - app-server
+    networks:
+      - frontend  
+
+  # Database Service (PostgreSQL)
+  db:
+    image: postgres:latest
+    ports:
+      - "5432:5432" # Expose PostgreSQL port
+    restart: always
+    environment:
+      POSTGRES_DB: polls_93g5
+      POSTGRES_USER: polls_93g5_user
+      POSTGRES_PASSWORD: wstNtf7Iw9wZV6bSdPmdYN9YnlLcNVdn
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    networks:
+      - backend  
+  
+# Volumes
+volumes:
+  db-data:
+
+# Networks to be created to facilitate communication between containers
+networks:
+  backend:
+  frontend:
